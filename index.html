@@ -144,18 +144,18 @@ function gestioneOrientamento(evento) {
   // Calcola la differenza di inclinazione
   var differenza = gamma - ultimoGamma;
   
-  // DESTRA (gamma aumenta) = volume SU
-  if (differenza > 2) {
-    volume += 3;
+  // DESTRA (gamma aumenta) = volume SU - PIÙ SENSIBILE
+  if (differenza > 1.5) {
+    volume += 5;
     aggiornaVisualizzazione();
-    document.getElementById('testoStato').textContent = '➡️ DESTRA - Volume aumentato!';
+    document.getElementById('testoStato').textContent = '➡️ DESTRA - Volume: ' + Math.round(volume);
     document.getElementById('testoStato').style.color = 'lime';
   }
-  // SINISTRA (gamma diminuisce) = volume GIÙ
-  else if (differenza < -2) {
-    volume -= 3;
+  // SINISTRA (gamma diminuisce) = volume GIÙ - PIÙ SENSIBILE
+  else if (differenza < -1.5) {
+    volume -= 5;
     aggiornaVisualizzazione();
-    document.getElementById('testoStato').textContent = '⬅️ SINISTRA - Volume diminuito!';
+    document.getElementById('testoStato').textContent = '⬅️ SINISTRA - Volume: ' + Math.round(volume);
     document.getElementById('testoStato').style.color = 'orange';
   }
   
@@ -221,3 +221,4 @@ aggiornaVisualizzazione();
 </script>
 </body>
 </html>
+

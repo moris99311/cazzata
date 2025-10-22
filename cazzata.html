@@ -5,167 +5,235 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Volume Control</title>
 <style>
-body {
+* {
   margin: 0;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  background: #1a1a2e;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0f0f23;
   color: white;
-  text-align: center;
-  min-height: 100vh;
+  font-family: Arial, sans-serif;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
 }
 
 h1 {
-  font-size: 2em;
-  margin-bottom: 30px;
+  font-size: 2.5em;
+  margin-bottom: 10px;
 }
 
-.volume-number {
-  font-size: 5em;
+.istruzioni {
+  font-size: 1.2em;
+  margin-bottom: 40px;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.numero-volume {
+  font-size: 7em;
   font-weight: bold;
-  margin: 20px 0;
-  color: #00ff88;
+  color: #0ff;
+  margin: 30px 0;
+  text-shadow: 0 0 20px rgba(0,255,255,0.5);
 }
 
-.bar-container {
+.contenitore-barra {
   width: 90%;
-  max-width: 400px;
-  height: 60px;
-  background: #333;
-  border-radius: 30px;
-  margin: 30px auto;
+  max-width: 500px;
+  height: 80px;
+  background: #1a1a3e;
+  border-radius: 40px;
   overflow: hidden;
-  border: 3px solid #555;
+  box-shadow: inset 0 4px 10px rgba(0,0,0,0.5);
+  border: 4px solid #2a2a4e;
 }
 
-.bar {
+.barra-volume {
   height: 100%;
   width: 50%;
-  background: linear-gradient(90deg, #00ff88, #00cc66);
-  transition: width 0.2s;
+  background: linear-gradient(90deg, #00ffff, #0099ff);
+  box-shadow: 0 0 20px rgba(0,255,255,0.6);
+  transition: width 0.15s ease-out;
 }
 
-button {
-  background: #00ff88;
-  color: #1a1a2e;
+.pulsante {
+  background: #0ff;
+  color: #0f0f23;
   border: none;
-  padding: 20px 50px;
-  font-size: 1.3em;
-  border-radius: 50px;
+  padding: 25px 60px;
+  font-size: 1.5em;
   font-weight: bold;
+  border-radius: 50px;
+  margin-top: 40px;
   cursor: pointer;
-  margin: 20px auto;
+  box-shadow: 0 5px 20px rgba(0,255,255,0.4);
 }
 
-button:active {
+.pulsante:active {
   transform: scale(0.95);
 }
 
-.info {
-  margin-top: 20px;
-  font-size: 1.1em;
-  opacity: 0.8;
+.stato {
+  margin-top: 30px;
+  font-size: 1.3em;
+  text-align: center;
+  min-height: 30px;
 }
 
-.debug {
+.dati-sensore {
   position: fixed;
-  bottom: 10px;
-  left: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
-  font-size: 0.8em;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.8);
+  padding: 15px;
   border-radius: 10px;
+  font-size: 0.9em;
+  font-family: monospace;
 }
 </style>
 </head>
 <body>
 
-<h1>🎵 Controllo Volume</h1>
+<h1>🎵 VOLUME</h1>
+<div class="istruzioni">Inclina il telefono a SINISTRA e DESTRA</div>
 
-<div class="volume-number" id="vol">50</div>
+<div class="numero-volume" id="numeroVolume">50</div>
 
-<div class="bar-container">
-  <div class="bar" id="bar"></div>
+<div class="contenitore-barra">
+  <div class="barra-volume" id="barraVolume"></div>
 </div>
 
-<button id="btn" onclick="start()">AVVIA</button>
+<button class="pulsante" id="pulsanteAvvio">START</button>
 
-<div class="info" id="info">Premi AVVIA per iniziare</div>
+<div class="stato" id="stato">Premi START per iniziare</div>
 
-<div class="debug" id="debug">In attesa...</div>
+<div class="dati-sensore" id="debug">
+  Sensore: in attesa...<br>
+  Gamma: 0°<br>
+  Volume: 50
+</div>
 
 <script>
 let volume = 50;
-let active = false;
-let lastTilt = 0;
+let attivo = false;
+let ultimoGamma = 0;
 
-function update() {
-  if(volume < 0) volume = 0;
-  if(volume > 100) volume = 100;
+function aggiornaVolume() {
+  // Limita il volume tra 0 e 100
+  if (volume < 0) volume = 0;
+  if (volume > 100) volume = 100;
   
-  document.getElementById('vol').textContent = Math.round(volume);
-  document.getElementById('bar').style.width = volume + '%';
+  // Aggiorna il numero
+  document.getElementById('numeroVolume').textContent = Math.round(volume);
+  
+  // Aggiorna la barra
+  document.getElementById('barraVolume').style.width = volume + '%';
+  
+  // Cambia colore in base al livello
+  const barra = document.getElementById('barraVolume');
+  if (volume < 33) {
+    barra.style.background = 'linear-gradient(90deg, #ff0055, #ff0099)';
+  } else if (volume < 66) {
+    barra.style.background = 'linear-gradient(90deg, #ffaa00, #ffdd00)';
+  } else {
+    barra.style.background = 'linear-gradient(90deg, #00ffff, #0099ff)';
+  }
 }
 
-function handleTilt(e) {
-  if(!active) return;
+function gestisciOrientamento(evento) {
+  if (!attivo) return;
   
   // gamma va da -90 (sinistra) a +90 (destra)
-  let tilt = e.gamma || 0;
+  const gamma = evento.gamma;
   
-  document.getElementById('debug').textContent = 
-    'Inclinazione: ' + tilt.toFixed(1) + '° | Volume: ' + Math.round(volume);
-  
-  let diff = tilt - lastTilt;
-  
-  // Spostamento verso DESTRA = volume SU
-  if(diff > 2) {
-    volume += 3;
-    update();
-    document.getElementById('info').textContent = '➡️ VOLUME SU';
-  }
-  // Spostamento verso SINISTRA = volume GIÙ
-  else if(diff < -2) {
-    volume -= 3;
-    update();
-    document.getElementById('info').textContent = '⬅️ VOLUME GIÙ';
+  if (gamma === null) {
+    document.getElementById('debug').innerHTML = 
+      'Sensore: NON FUNZIONA<br>Gamma: null<br>Volume: ' + Math.round(volume);
+    return;
   }
   
-  lastTilt = tilt;
+  // Mostra i dati nel debug
+  document.getElementById('debug').innerHTML = 
+    'Sensore: ATTIVO ✓<br>Gamma: ' + gamma.toFixed(1) + '°<br>Volume: ' + Math.round(volume);
+  
+  // Calcola la differenza di inclinazione
+  const differenza = gamma - ultimoGamma;
+  
+  // Se inclini a DESTRA (gamma aumenta) = volume SU
+  if (differenza > 1.5) {
+    volume += 2;
+    aggiornaVolume();
+    document.getElementById('stato').textContent = '➡️ DESTRA - Volume aumentato!';
+  }
+  // Se inclini a SINISTRA (gamma diminuisce) = volume GIÙ  
+  else if (differenza < -1.5) {
+    volume -= 2;
+    aggiornaVolume();
+    document.getElementById('stato').textContent = '⬅️ SINISTRA - Volume diminuito!';
+  }
+  
+  ultimoGamma = gamma;
 }
 
-async function start() {
+async function avviaSensori() {
+  const pulsante = document.getElementById('pulsanteAvvio');
+  const stato = document.getElementById('stato');
+  
   try {
-    // Per iOS 13+
-    if(typeof DeviceOrientationEvent.requestPermission === 'function') {
-      let perm = await DeviceOrientationEvent.requestPermission();
-      if(perm === 'granted') {
-        window.addEventListener('deviceorientation', handleTilt);
-        active = true;
-        document.getElementById('btn').style.display = 'none';
-        document.getElementById('info').textContent = '✅ MUOVI IL TELEFONO!';
+    // Controlla se DeviceOrientationEvent esiste
+    if (!window.DeviceOrientationEvent) {
+      stato.textContent = '❌ Sensori non supportati su questo browser';
+      return;
+    }
+    
+    // Per iOS 13+ serve permesso esplicito
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      stato.textContent = '⏳ Richiedo permesso...';
+      
+      const permesso = await DeviceOrientationEvent.requestPermission();
+      
+      if (permesso === 'granted') {
+        window.addEventListener('deviceorientation', gestisciOrientamento);
+        attivo = true;
+        pulsante.style.display = 'none';
+        stato.textContent = '✅ MUOVI IL TELEFONO ORA!';
       } else {
-        document.getElementById('info').textContent = '❌ Permesso negato';
+        stato.textContent = '❌ Permesso negato - Vai in Impostazioni Safari';
       }
-    }
-    // Per Android e altri
+    } 
+    // Per Android e altri browser
     else {
-      window.addEventListener('deviceorientation', handleTilt);
-      active = true;
-      document.getElementById('btn').style.display = 'none';
-      document.getElementById('info').textContent = '✅ MUOVI IL TELEFONO!';
+      window.addEventListener('deviceorientation', gestisciOrientamento);
+      attivo = true;
+      pulsante.style.display = 'none';
+      stato.textContent = '✅ MUOVI IL TELEFONO ORA!';
+      
+      // Test dopo 2 secondi per vedere se funziona
+      setTimeout(() => {
+        if (ultimoGamma === 0) {
+          stato.textContent = '⚠️ Sensore non risponde - Controlla permessi browser';
+        }
+      }, 2000);
     }
-  } catch(err) {
-    document.getElementById('debug').textContent = 'ERRORE: ' + err.message;
-    document.getElementById('info').textContent = '⚠️ Sensori non disponibili';
+    
+  } catch (errore) {
+    console.error('Errore:', errore);
+    stato.textContent = '❌ Errore: ' + errore.message;
   }
 }
 
-update();
+// Aggiungi evento al pulsante
+document.getElementById('pulsanteAvvio').addEventListener('click', avviaSensori);
+
+// Inizializza
+aggiornaVolume();
 </script>
 
 </body>

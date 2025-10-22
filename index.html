@@ -39,8 +39,9 @@ h1 {
 
 .barra-piena {
   height: 100%;
-  width: 75%;
+  width: 50%;
   background-color: cyan;
+  transition: width 0.2s ease;
 }
 
 .testo {
@@ -48,19 +49,51 @@ h1 {
   margin-top: 50px;
   color: yellow;
 }
+
+button {
+  background-color: cyan;
+  color: black;
+  border: none;
+  padding: 25px 60px;
+  font-size: 35px;
+  font-weight: bold;
+  border-radius: 50px;
+  margin-top: 30px;
+  cursor: pointer;
+}
+
+.debug {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background-color: rgba(50, 50, 50, 0.9);
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 18px;
+  color: lime;
+}
 </style>
 </head>
 <body>
 
 <h1>CONTROLLO VOLUME</h1>
 
-<div class="numero-volume">75</div>
+<div class="numero-volume" id="numeroVolume">50</div>
 
 <div class="contenitore-barra">
-  <div class="barra-piena"></div>
+  <div class="barra-piena" id="barraVolume"></div>
 </div>
 
-<div class="testo">Barra del volume al 75%</div>
+<div class="testo" id="testoStato">Premi START per iniziare</div>
+
+<button id="buttonStart" onclick="avviaSensori()">START</button>
+
+<div class="debug" id="debugInfo">
+  In attesa di avvio...<br>
+  Gamma: 0°<br>
+  Eventi ricevuti: 0
+</div>
 
 <script>
 // Variabili globali

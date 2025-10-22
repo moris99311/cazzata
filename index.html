@@ -72,6 +72,7 @@ button {
   border-radius: 10px;
   font-size: 18px;
   color: lime;
+  display: none;
 }
 </style>
 </head>
@@ -126,11 +127,6 @@ function gestioneOrientamento(evento) {
   // Prendi il valore gamma (inclinazione sinistra/destra)
   var gamma = evento.gamma;
   
-  // Aggiorna il debug
-  document.getElementById('debugInfo').innerHTML = 
-    'Sensore: ' + (attivo ? 'ATTIVO ✓' : 'IN PAUSA') + '<br>' +
-    'Gamma: ' + (gamma ? gamma.toFixed(1) : 'NULL') + '°<br>' +
-    'Eventi ricevuti: ' + contatoreEventi;
   
   // Se non è attivo o gamma è null, esci
   if (!attivo || gamma === null) return;
@@ -215,5 +211,6 @@ aggiornaVisualizzazione();
 </script>
 </body>
 </html>
+
 
 

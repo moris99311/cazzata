@@ -5,14 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Volume Control</title>
 <style>
-* {
+body {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background: #0f0f23;
+  background: #1a1a2e;
   color: white;
   font-family: Arial, sans-serif;
   display: flex;
@@ -20,220 +16,149 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+}
+
+.container {
+  text-align: center;
   padding: 20px;
+  width: 100%;
+  max-width: 500px;
 }
 
 h1 {
   font-size: 2.5em;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
-.istruzioni {
-  font-size: 1.2em;
-  margin-bottom: 40px;
-  text-align: center;
-  opacity: 0.9;
-}
-
-.numero-volume {
-  font-size: 7em;
+.numero {
+  font-size: 6em;
   font-weight: bold;
-  color: #0ff;
+  color: #00ff88;
   margin: 30px 0;
-  text-shadow: 0 0 20px rgba(0,255,255,0.5);
 }
 
-.contenitore-barra {
-  width: 90%;
-  max-width: 500px;
+.barra-esterna {
+  width: 100%;
   height: 80px;
-  background: #1a1a3e;
+  background: #0a0a15;
   border-radius: 40px;
   overflow: hidden;
-  box-shadow: inset 0 4px 10px rgba(0,0,0,0.5);
-  border: 4px solid #2a2a4e;
+  border: 3px solid #333;
+  margin: 20px 0;
 }
 
-.barra-volume {
+.barra-interna {
   height: 100%;
   width: 50%;
-  background: linear-gradient(90deg, #00ffff, #0099ff);
-  box-shadow: 0 0 20px rgba(0,255,255,0.6);
-  transition: width 0.15s ease-out;
+  background: #00ff88;
+  transition: width 0.2s;
 }
 
-.pulsante {
-  background: #0ff;
-  color: #0f0f23;
+button {
+  background: #00ff88;
+  color: #1a1a2e;
   border: none;
-  padding: 25px 60px;
+  padding: 20px 50px;
   font-size: 1.5em;
   font-weight: bold;
-  border-radius: 50px;
-  margin-top: 40px;
-  cursor: pointer;
-  box-shadow: 0 5px 20px rgba(0,255,255,0.4);
+  border-radius: 30px;
+  margin: 20px 0;
 }
 
-.pulsante:active {
-  transform: scale(0.95);
-}
-
-.stato {
-  margin-top: 30px;
+.messaggio {
   font-size: 1.3em;
-  text-align: center;
-  min-height: 30px;
+  margin: 20px 0;
 }
 
-.dati-sensore {
+.dati {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
-  right: 20px;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
   background: rgba(0,0,0,0.8);
   padding: 15px;
   border-radius: 10px;
   font-size: 0.9em;
-  font-family: monospace;
 }
 </style>
 </head>
 <body>
 
-<h1>🎵 VOLUME</h1>
-<div class="istruzioni">Inclina il telefono a SINISTRA e DESTRA</div>
-
-<div class="numero-volume" id="numeroVolume">50</div>
-
-<div class="contenitore-barra">
-  <div class="barra-volume" id="barraVolume"></div>
+<div class="container">
+  <h1>VOLUME</h1>
+  
+  <div class="numero" id="num">50</div>
+  
+  <div class="barra-esterna">
+    <div class="barra-interna" id="bar"></div>
+  </div>
+  
+  <button id="start" onclick="avvia()">START</button>
+  
+  <div class="messaggio" id="msg">Premi START</div>
 </div>
 
-<button class="pulsante" id="pulsanteAvvio">START</button>
-
-<div class="stato" id="stato">Premi START per iniziare</div>
-
-<div class="dati-sensore" id="debug">
-  Sensore: in attesa...<br>
-  Gamma: 0°<br>
-  Volume: 50
+<div class="dati" id="data">
+  Eventi: 0<br>
+  Gamma: 0<br>
+  Status: in attesa
 </div>
 
 <script>
-let volume = 50;
-let attivo = false;
-let ultimoGamma = 0;
+var volume = 50;
+var attivo = false;
+var ultimo = 0;
+var eventi = 0;
 
-function aggiornaVolume() {
-  // Limita il volume tra 0 e 100
+function aggiorna() {
   if (volume < 0) volume = 0;
   if (volume > 100) volume = 100;
-  
-  // Aggiorna il numero
-  document.getElementById('numeroVolume').textContent = Math.round(volume);
-  
-  // Aggiorna la barra
-  document.getElementById('barraVolume').style.width = volume + '%';
-  
-  // Cambia colore in base al livello
-  const barra = document.getElementById('barraVolume');
-  if (volume < 33) {
-    barra.style.background = 'linear-gradient(90deg, #ff0055, #ff0099)';
-  } else if (volume < 66) {
-    barra.style.background = 'linear-gradient(90deg, #ffaa00, #ffdd00)';
-  } else {
-    barra.style.background = 'linear-gradient(90deg, #00ffff, #0099ff)';
-  }
+  document.getElementById('num').innerHTML = Math.round(volume);
+  document.getElementById('bar').style.width = volume + '%';
 }
 
-function gestisciOrientamento(evento) {
-  if (!attivo) return;
+function orienta(e) {
+  eventi++;
+  var g = e.gamma;
   
-  // gamma va da -90 (sinistra) a +90 (destra)
-  const gamma = evento.gamma;
+  document.getElementById('data').innerHTML = 
+    'Eventi: ' + eventi + '<br>' +
+    'Gamma: ' + (g || 0).toFixed(1) + '<br>' +
+    'Status: ' + (attivo ? 'ATTIVO' : 'in pausa');
   
-  if (gamma === null) {
-    document.getElementById('debug').innerHTML = 
-      'Sensore: NON FUNZIONA<br>Gamma: null<br>Volume: ' + Math.round(volume);
+  if (!attivo || !g) return;
+  
+  var diff = g - ultimo;
+  
+  if (diff > 3) {
+    volume += 5;
+    aggiorna();
+    document.getElementById('msg').innerHTML = 'DESTRA +5';
+  } else if (diff < -3) {
+    volume -= 5;
+    aggiorna();
+    document.getElementById('msg').innerHTML = 'SINISTRA -5';
+  }
+  
+  ultimo = g;
+}
+
+function avvia() {
+  if (!window.DeviceOrientationEvent) {
+    document.getElementById('msg').innerHTML = 'ERRORE: browser non supportato';
     return;
   }
   
-  // Mostra i dati nel debug
-  document.getElementById('debug').innerHTML = 
-    'Sensore: ATTIVO ✓<br>Gamma: ' + gamma.toFixed(1) + '°<br>Volume: ' + Math.round(volume);
+  window.addEventListener('deviceorientation', orienta);
   
-  // Calcola la differenza di inclinazione
-  const differenza = gamma - ultimoGamma;
-  
-  // Se inclini a DESTRA (gamma aumenta) = volume SU
-  if (differenza > 1.5) {
-    volume += 2;
-    aggiornaVolume();
-    document.getElementById('stato').textContent = '➡️ DESTRA - Volume aumentato!';
-  }
-  // Se inclini a SINISTRA (gamma diminuisce) = volume GIÙ  
-  else if (differenza < -1.5) {
-    volume -= 2;
-    aggiornaVolume();
-    document.getElementById('stato').textContent = '⬅️ SINISTRA - Volume diminuito!';
-  }
-  
-  ultimoGamma = gamma;
+  setTimeout(function() {
+    attivo = true;
+    document.getElementById('start').style.display = 'none';
+    document.getElementById('msg').innerHTML = 'MUOVI IL TELEFONO';
+  }, 500);
 }
 
-async function avviaSensori() {
-  const pulsante = document.getElementById('pulsanteAvvio');
-  const stato = document.getElementById('stato');
-  
-  try {
-    // Controlla se DeviceOrientationEvent esiste
-    if (!window.DeviceOrientationEvent) {
-      stato.textContent = '❌ Sensori non supportati su questo browser';
-      return;
-    }
-    
-    // Per iOS 13+ serve permesso esplicito
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      stato.textContent = '⏳ Richiedo permesso...';
-      
-      const permesso = await DeviceOrientationEvent.requestPermission();
-      
-      if (permesso === 'granted') {
-        window.addEventListener('deviceorientation', gestisciOrientamento);
-        attivo = true;
-        pulsante.style.display = 'none';
-        stato.textContent = '✅ MUOVI IL TELEFONO ORA!';
-      } else {
-        stato.textContent = '❌ Permesso negato - Vai in Impostazioni Safari';
-      }
-    } 
-    // Per Android e altri browser
-    else {
-      window.addEventListener('deviceorientation', gestisciOrientamento);
-      attivo = true;
-      pulsante.style.display = 'none';
-      stato.textContent = '✅ MUOVI IL TELEFONO ORA!';
-      
-      // Test dopo 2 secondi per vedere se funziona
-      setTimeout(() => {
-        if (ultimoGamma === 0) {
-          stato.textContent = '⚠️ Sensore non risponde - Controlla permessi browser';
-        }
-      }, 2000);
-    }
-    
-  } catch (errore) {
-    console.error('Errore:', errore);
-    stato.textContent = '❌ Errore: ' + errore.message;
-  }
-}
-
-// Aggiungi evento al pulsante
-document.getElementById('pulsanteAvvio').addEventListener('click', avviaSensori);
-
-// Inizializza
-aggiornaVolume();
+aggiorna();
 </script>
 
 </body>

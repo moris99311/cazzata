@@ -3,163 +3,188 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Volume Control</title>
+<title>Barra Volume</title>
 <style>
 body {
   margin: 0;
-  padding: 0;
-  background: #1a1a2e;
+  padding: 20px;
+  background-color: black;
   color: white;
   font-family: Arial, sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-}
-
-.container {
   text-align: center;
-  padding: 20px;
-  width: 100%;
-  max-width: 500px;
 }
 
 h1 {
-  font-size: 2.5em;
-  margin-bottom: 20px;
+  font-size: 50px;
+  margin-top: 50px;
 }
 
-.numero {
-  font-size: 6em;
+.numero-volume {
+  font-size: 120px;
   font-weight: bold;
-  color: #00ff88;
-  margin: 30px 0;
+  color: cyan;
+  margin: 50px 0;
 }
 
-.barra-esterna {
-  width: 100%;
-  height: 80px;
-  background: #0a0a15;
-  border-radius: 40px;
+.contenitore-barra {
+  width: 90%;
+  max-width: 600px;
+  height: 100px;
+  background-color: #333333;
+  margin: 0 auto;
+  border-radius: 50px;
+  border: 5px solid white;
   overflow: hidden;
-  border: 3px solid #333;
-  margin: 20px 0;
 }
 
-.barra-interna {
+.barra-piena {
   height: 100%;
-  width: 50%;
-  background: #00ff88;
-  transition: width 0.2s;
+  width: 75%;
+  background-color: cyan;
 }
 
-button {
-  background: #00ff88;
-  color: #1a1a2e;
-  border: none;
-  padding: 20px 50px;
-  font-size: 1.5em;
-  font-weight: bold;
-  border-radius: 30px;
-  margin: 20px 0;
-}
-
-.messaggio {
-  font-size: 1.3em;
-  margin: 20px 0;
-}
-
-.dati {
-  position: fixed;
-  bottom: 10px;
-  left: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.8);
-  padding: 15px;
-  border-radius: 10px;
-  font-size: 0.9em;
+.testo {
+  font-size: 30px;
+  margin-top: 50px;
+  color: yellow;
 }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>VOLUME</h1>
-  
-  <div class="numero" id="num">50</div>
-  
-  <div class="barra-esterna">
-    <div class="barra-interna" id="bar"></div>
-  </div>
-  
-  <button id="start" onclick="avvia()">START</button>
-  
-  <div class="messaggio" id="msg">Premi START</div>
+<h1>CONTROLLO VOLUME</h1>
+
+<div class="numero-volume">75</div>
+
+<div class="contenitore-barra">
+  <div class="barra-piena"></div>
 </div>
 
-<div class="dati" id="data">
-  Eventi: 0<br>
-  Gamma: 0<br>
-  Status: in attesa
-</div>
+<div class="testo">Barra del volume al 75%</div>
 
 <script>
+// Variabili globali
 var volume = 50;
 var attivo = false;
-var ultimo = 0;
-var eventi = 0;
+var ultimoGamma = 0;
+var contatoreEventi = 0;
 
-function aggiorna() {
+// Funzione per aggiornare la visualizzazione
+function aggiornaVisualizzazione() {
+  // Limita il volume tra 0 e 100
   if (volume < 0) volume = 0;
   if (volume > 100) volume = 100;
-  document.getElementById('num').innerHTML = Math.round(volume);
-  document.getElementById('bar').style.width = volume + '%';
+  
+  // Aggiorna il numero
+  document.getElementById('numeroVolume').textContent = Math.round(volume);
+  
+  // Aggiorna la larghezza della barra
+  document.getElementById('barraVolume').style.width = volume + '%';
+  
+  // Cambia colore in base al livello
+  var barra = document.getElementById('barraVolume');
+  if (volume < 30) {
+    barra.style.backgroundColor = 'red';
+  } else if (volume < 70) {
+    barra.style.backgroundColor = 'yellow';
+  } else {
+    barra.style.backgroundColor = 'cyan';
+  }
 }
 
-function orienta(e) {
-  eventi++;
-  var g = e.gamma;
+// Funzione che gestisce l'orientamento del telefono
+function gestioneOrientamento(evento) {
+  contatoreEventi++;
   
-  document.getElementById('data').innerHTML = 
-    'Eventi: ' + eventi + '<br>' +
-    'Gamma: ' + (g || 0).toFixed(1) + '<br>' +
-    'Status: ' + (attivo ? 'ATTIVO' : 'in pausa');
+  // Prendi il valore gamma (inclinazione sinistra/destra)
+  var gamma = evento.gamma;
   
-  if (!attivo || !g) return;
+  // Aggiorna il debug
+  document.getElementById('debugInfo').innerHTML = 
+    'Sensore: ' + (attivo ? 'ATTIVO ✓' : 'IN PAUSA') + '<br>' +
+    'Gamma: ' + (gamma ? gamma.toFixed(1) : 'NULL') + '°<br>' +
+    'Eventi ricevuti: ' + contatoreEventi;
   
-  var diff = g - ultimo;
+  // Se non è attivo o gamma è null, esci
+  if (!attivo || gamma === null) return;
   
-  if (diff > 3) {
-    volume += 5;
-    aggiorna();
-    document.getElementById('msg').innerHTML = 'DESTRA +5';
-  } else if (diff < -3) {
-    volume -= 5;
-    aggiorna();
-    document.getElementById('msg').innerHTML = 'SINISTRA -5';
+  // Calcola la differenza di inclinazione
+  var differenza = gamma - ultimoGamma;
+  
+  // DESTRA (gamma aumenta) = volume SU
+  if (differenza > 2) {
+    volume += 3;
+    aggiornaVisualizzazione();
+    document.getElementById('testoStato').textContent = '➡️ DESTRA - Volume aumentato!';
+    document.getElementById('testoStato').style.color = 'lime';
+  }
+  // SINISTRA (gamma diminuisce) = volume GIÙ
+  else if (differenza < -2) {
+    volume -= 3;
+    aggiornaVisualizzazione();
+    document.getElementById('testoStato').textContent = '⬅️ SINISTRA - Volume diminuito!';
+    document.getElementById('testoStato').style.color = 'orange';
   }
   
-  ultimo = g;
+  // Salva l'ultimo valore
+  ultimoGamma = gamma;
 }
 
-function avvia() {
+// Funzione per avviare i sensori
+function avviaSensori() {
+  var button = document.getElementById('buttonStart');
+  var testo = document.getElementById('testoStato');
+  
+  // Controlla se l'API esiste
   if (!window.DeviceOrientationEvent) {
-    document.getElementById('msg').innerHTML = 'ERRORE: browser non supportato';
+    testo.textContent = '❌ ERRORE: Sensori non disponibili';
+    testo.style.color = 'red';
     return;
   }
   
-  window.addEventListener('deviceorientation', orienta);
-  
-  setTimeout(function() {
-    attivo = true;
-    document.getElementById('start').style.display = 'none';
-    document.getElementById('msg').innerHTML = 'MUOVI IL TELEFONO';
-  }, 500);
+  // Per iOS serve richiedere permesso
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(function(risposta) {
+        if (risposta === 'granted') {
+          window.addEventListener('deviceorientation', gestioneOrientamento);
+          attivo = true;
+          button.style.display = 'none';
+          testo.textContent = '✅ MUOVI IL TELEFONO A DESTRA E SINISTRA!';
+          testo.style.color = 'lime';
+        } else {
+          testo.textContent = '❌ Permesso negato - Vai in Impostazioni Safari';
+          testo.style.color = 'red';
+        }
+      })
+      .catch(function(errore) {
+        testo.textContent = '❌ Errore: ' + errore.message;
+        testo.style.color = 'red';
+      });
+  } 
+  // Per Android e altri
+  else {
+    window.addEventListener('deviceorientation', gestioneOrientamento);
+    
+    setTimeout(function() {
+      attivo = true;
+      button.style.display = 'none';
+      testo.textContent = '✅ MUOVI IL TELEFONO A DESTRA E SINISTRA!';
+      testo.style.color = 'lime';
+      
+      // Controlla dopo 3 secondi se funziona
+      setTimeout(function() {
+        if (contatoreEventi === 0) {
+          testo.textContent = '⚠️ Sensore non risponde - Controlla permessi Chrome';
+          testo.style.color = 'orange';
+        }
+      }, 3000);
+    }, 500);
+  }
 }
 
-aggiorna();
+// Inizializza la barra al caricamento
+aggiornaVisualizzazione();
 </script>
-
 </body>
 </html>

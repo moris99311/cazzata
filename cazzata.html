@@ -1,91 +1,253 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Controllo Volume con Movimento</title>
 <style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
   body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    padding: 20px;
+  }
+  
+  h1 {
+    font-size: 1.8em;
+    margin-bottom: 20px;
     text-align: center;
-    padding: 2em;
   }
-  #volume {
-    font-size: 3em;
-    margin: 1em 0;
+  
+  .instruction {
+    font-size: 1em;
+    margin-bottom: 30px;
+    text-align: center;
+    opacity: 0.9;
   }
-  #info {
-    margin-top: 2em;
-    color: #555;
+  
+  .volume-container {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 40px 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    min-width: 280px;
+  }
+  
+  .volume-display {
+    font-size: 3.5em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .volume-bar-container {
+    width: 100%;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+  
+  .volume-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88 0%, #00cc66 100%);
+    border-radius: 20px;
+    transition: width 0.1s ease-out;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  }
+  
+  .status {
+    text-align: center;
+    font-size: 0.9em;
+    margin-top: 15px;
+    opacity: 0.8;
+  }
+  
+  #startButton {
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid white;
+    color: white;
+    padding: 15px 40px;
+    font-size: 1.1em;
+    border-radius: 30px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    font-weight: bold;
+  }
+  
+  #startButton:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  .debug {
+    margin-top: 20px;
+    font-size: 0.8em;
+    text-align: center;
+    opacity: 0.7;
   }
 </style>
 </head>
 <body>
-<h1>Controllo Volume con Movimento del Telefono</h1>
-<div>Muovi il telefono a destra per aumentare il volume, a sinistra per diminuire</div>
-<div id="volume">Volume: 50</div>
-<div id="info">Attendi che l'app chieda il permesso di accesso ai sensori se necessario.</div>
+
+<h1>🎵 Controllo Volume</h1>
+<div class="instruction">Inclina il telefono a destra o sinistra<br>per regolare il volume</div>
+
+<div class="volume-container">
+  <div class="volume-display" id="volumeDisplay">50</div>
+  
+  <div class="volume-bar-container">
+    <div class="volume-bar" id="volumeBar" style="width: 50%"></div>
+  </div>
+  
+  <div class="status" id="status">Premi il pulsante per iniziare</div>
+</div>
+
+<button id="startButton">ATTIVA SENSORI</button>
+
+<div class="debug" id="debug"></div>
 
 <script>
-  let volume = 50; // volume iniziale da 0 a 100
-  const volumeElement = document.getElementById('volume');
-  const infoElement = document.getElementById('info');
+let volume = 50;
+let isActive = false;
+let lastX = null;
+let lastGamma = null;
 
-  // Funzione per aggiornare il display del volume
-  function updateVolume() {
-    if(volume < 0) volume = 0;
-    if(volume > 100) volume = 100;
-    volumeElement.textContent = 'Volume: ' + volume;
+const volumeDisplay = document.getElementById('volumeDisplay');
+const volumeBar = document.getElementById('volumeBar');
+const status = document.getElementById('status');
+const startButton = document.getElementById('startButton');
+const debug = document.getElementById('debug');
+
+// Aggiorna la visualizzazione del volume
+function updateVolumeDisplay() {
+  if (volume < 0) volume = 0;
+  if (volume > 100) volume = 100;
+  
+  volumeDisplay.textContent = Math.round(volume);
+  volumeBar.style.width = volume + '%';
+  
+  // Cambia colore della barra in base al livello
+  if (volume < 30) {
+    volumeBar.style.background = 'linear-gradient(90deg, #ff6b6b 0%, #ff5252 100%)';
+  } else if (volume < 70) {
+    volumeBar.style.background = 'linear-gradient(90deg, #ffd93d 0%, #ffb800 100%)';
+  } else {
+    volumeBar.style.background = 'linear-gradient(90deg, #00ff88 0%, #00cc66 100%)';
   }
+}
 
-  // Variabile per tracciare l'ultimo valore di orientamento sul piano Y (movimento laterale)
-  let lastGamma = null;
+// Gestione DeviceOrientation (inclinazione)
+function handleOrientation(event) {
+  if (!isActive) return;
+  
+  const gamma = event.gamma; // inclinazione laterale -90 a 90
+  debug.textContent = `Gamma: ${gamma ? gamma.toFixed(1) : 'N/A'}°`;
+  
+  if (gamma !== null && lastGamma !== null) {
+    const diff = gamma - lastGamma;
+    
+    // Movimento verso destra aumenta volume
+    if (diff > 1.5) {
+      volume += 2;
+      updateVolumeDisplay();
+      status.textContent = '▶️ Volume aumentato';
+    } 
+    // Movimento verso sinistra diminuisce volume
+    else if (diff < -1.5) {
+      volume -= 2;
+      updateVolumeDisplay();
+      status.textContent = '◀️ Volume diminuito';
+    }
+  }
+  
+  lastGamma = gamma;
+}
 
-  // Gestore evento deviceorientation
-  function handleOrientation(event) {
-    const gamma = event.gamma; // varia da -90 a 90, indica inclinazione laterale del device
+// Gestione DeviceMotion (accelerometro) - alternativa più affidabile
+function handleMotion(event) {
+  if (!isActive) return;
+  
+  const acc = event.accelerationIncludingGravity;
+  if (!acc) return;
+  
+  const x = acc.x;
+  debug.textContent = `AccX: ${x ? x.toFixed(2) : 'N/A'}`;
+  
+  if (x !== null && lastX !== null) {
+    const diff = x - lastX;
+    
+    // Movimento verso destra (X positivo)
+    if (diff > 0.5) {
+      volume += 1;
+      updateVolumeDisplay();
+      status.textContent = '▶️ Volume aumentato';
+    }
+    // Movimento verso sinistra (X negativo)
+    else if (diff < -0.5) {
+      volume -= 1;
+      updateVolumeDisplay();
+      status.textContent = '◀️ Volume diminuito';
+    }
+  }
+  
+  lastX = x;
+}
 
-    if(lastGamma !== null) {
-      const diff = gamma - lastGamma;
-      // Se il dispositivo si muove verso destra (gamma aumenta), alza volume
-      if(diff > 2) { // soglia di movimento verso destra
-        volume += 1;
-        updateVolume();
-      } 
-      // Se il dispositivo si muove verso sinistra (gamma diminuisce), abbassa volume
-      else if(diff < -2) { // soglia di movimento verso sinistra
-        volume -= 1;
-        updateVolume();
+// Richiesta permessi e attivazione sensori
+async function startSensors() {
+  try {
+    // iOS 13+ richiede permessi espliciti
+    if (typeof DeviceOrientationEvent !== 'undefined' && 
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      
+      const permission = await DeviceOrientationEvent.requestPermission();
+      
+      if (permission === 'granted') {
+        window.addEventListener('deviceorientation', handleOrientation);
+        isActive = true;
+        status.textContent = '✅ Sensori attivi! Muovi il telefono';
+        startButton.style.display = 'none';
+      } else {
+        status.textContent = '❌ Permesso negato';
       }
-    }
-    lastGamma = gamma;
-  }
-
-  // Per i browser moderni, serve chiedere permesso per accedere ai sensori su iOS
-  function requestPermission() {
-    if(typeof DeviceOrientationEvent !== 'undefined' &&
-       typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission()
-        .then(response => {
-          if(response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-            infoElement.textContent = 'Sensori attivati, muovi il telefono.';
-          } else {
-            infoElement.textContent = 'Permesso negato per accedere ai sensori.';
-          }
-        })
-        .catch(console.error);
     } else {
-      // Browser senza richiesta di permessi
+      // Android e altri browser
       window.addEventListener('deviceorientation', handleOrientation);
-      infoElement.textContent = 'Sensori attivati, muovi il telefono.';
+      window.addEventListener('devicemotion', handleMotion);
+      isActive = true;
+      status.textContent = '✅ Sensori attivi! Muovi il telefono';
+      startButton.style.display = 'none';
     }
+    
+  } catch (error) {
+    console.error('Errore:', error);
+    status.textContent = '⚠️ Sensori non disponibili';
   }
+}
 
-  // Evento per richiedere permesso al primo tocco
-  window.addEventListener('click', () => {
-    requestPermission();
-  }, {once: true});
+startButton.addEventListener('click', startSensors);
+
+// Inizializzazione
+updateVolumeDisplay();
 </script>
+
 </body>
 </html>

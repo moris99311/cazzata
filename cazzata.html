@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Controllo Volume con Movimento</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 2em;
+  }
+  #volume {
+    font-size: 3em;
+    margin: 1em 0;
+  }
+  #info {
+    margin-top: 2em;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+<h1>Controllo Volume con Movimento del Telefono</h1>
+<div>Muovi il telefono a destra per aumentare il volume, a sinistra per diminuire</div>
+<div id="volume">Volume: 50</div>
+<div id="info">Attendi che l'app chieda il permesso di accesso ai sensori se necessario.</div>
+
+<script>
+  let volume = 50; // volume iniziale da 0 a 100
+  const volumeElement = document.getElementById('volume');
+  const infoElement = document.getElementById('info');
+
+  // Funzione per aggiornare il display del volume
+  function updateVolume() {
+    if(volume < 0) volume = 0;
+    if(volume > 100) volume = 100;
+    volumeElement.textContent = 'Volume: ' + volume;
+  }
+
+  // Variabile per tracciare l'ultimo valore di orientamento sul piano Y (movimento laterale)
+  let lastGamma = null;
+
+  // Gestore evento deviceorientation
+  function handleOrientation(event) {
+    const gamma = event.gamma; // varia da -90 a 90, indica inclinazione laterale del device
+
+    if(lastGamma !== null) {
+      const diff = gamma - lastGamma;
+      // Se il dispositivo si muove verso destra (gamma aumenta), alza volume
+      if(diff > 2) { // soglia di movimento verso destra
+        volume += 1;
+        updateVolume();
+      } 
+      // Se il dispositivo si muove verso sinistra (gamma diminuisce), abbassa volume
+      else if(diff < -2) { // soglia di movimento verso sinistra
+        volume -= 1;
+        updateVolume();
+      }
+    }
+    lastGamma = gamma;
+  }
+
+  // Per i browser moderni, serve chiedere permesso per accedere ai sensori su iOS
+  function requestPermission() {
+    if(typeof DeviceOrientationEvent !== 'undefined' &&
+       typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(response => {
+          if(response === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+            infoElement.textContent = 'Sensori attivati, muovi il telefono.';
+          } else {
+            infoElement.textContent = 'Permesso negato per accedere ai sensori.';
+          }
+        })
+        .catch(console.error);
+    } else {
+      // Browser senza richiesta di permessi
+      window.addEventListener('deviceorientation', handleOrientation);
+      infoElement.textContent = 'Sensori attivati, muovi il telefono.';
+    }
+  }
+
+  // Evento per richiedere permesso al primo tocco
+  window.addEventListener('click', () => {
+    requestPermission();
+  }, {once: true});
+</script>
+</body>
+</html>
